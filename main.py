@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 import signal
 
@@ -10,9 +13,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 items: list[dict] = [
-    {"id": 1, "name": "Ice Cream", "description": "This is Ice Cream", "inventory": 10, "type": "food", "price": 5.99},
-    {"id": 2, "name": "Lays", "description": "Lays are the best chips in the world", "inventory": 5, "type": "food", "price": 2.99},
-    {"id": 3, "name": "Pencils", "description": "These are Pencils", "inventory": 20, "type": "stationery", "price": 0.99},
+    {"id": 1, "name": "Vanilla Ice Cream", "description": "Frozen Dessert", "inventory": 10, "type": "Dessert", "price": 5.99},
+    {"id": 2, "name": "Lays Magic Masala", "description": "Potato Chips", "inventory": 5, "type": "Snack", "price": 2.99},
+    {"id": 3, "name": "Pencils", "description": "Writing Tool", "inventory": 20, "type": "Stationery", "price": 0.99},
 ]
 
 @app.get("/", include_in_schema=False)
@@ -52,3 +55,18 @@ def create_item(item: dict):
     item["id"] = len(items) + 1
     items.append(item)
     return item
+
+@app.exception_handler(StarletteHTTPException)
+def general_http_exception_handler(request: Request, exception: StarletteHTTPException):
+    message = (exception.detail if exception.detail else "An error occurred. Please try again later.")
+
+    if request.url.path.startswith("/api"):
+        return JSONResponse(status_code=exception.status_code, content={"detail": message})
+    
+    return templates.TemplateResponse(request, "error.html", {"status_code": exception.status_code, "title": exception.status_code, "message": message}, status_code=exception.status_code)
+
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(request: Request, exception: RequestValidationError):
+    if request.url.path.startswith("/api"):
+        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content={"detail": exception.errors()})
+    return templates.TemplateResponse(request, "error.html", {"status_code": status.HTTP_422_UNPROCESSABLE_CONTENT, "title": status.HTTP_422_UNPROCESSABLE_CONTENT, "message": "Invalid input. Please check your data and try again."}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
