@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+  {% for item in items %}
+    <article class="content-section py-3 px-4 mb-4">
+      <div class="d-flex align-items-start gap-4">
+        <img class="rounded-circle article-img flex-shrink-0"
+             src="{{ url_for('static', path='profile_pics/RCB-Logo-2008.png') }}"
+             alt="{{ item.author }}'s profile picture"
+             width="64"
+             height="64"
+             loading="lazy">
+        <div class="flex-grow-1">
+          <div class="article-metadata mb-2">
+            <a class="me-2" href="#">{{ item.type }}</a>
+            <small class="text-body-secondary">{{ item.id }}</small>
+          </div>
+          <h2>
+            <a class="article-title" href="#">{{ item.name }}</a>
+          </h2>
+          <p class="article-content">{{ item.description }}</p>
+          <p class="article-content2"> ${{ item.price }}</p>
+        </div>
+      </div>
+    </article>
+  {% endfor %}
+{% endblock content %}
